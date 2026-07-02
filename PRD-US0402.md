@@ -1,8 +1,24 @@
-# PRD-US0402
+# PRD-US0402 - Recruitment List Replacement
 
 Related Story: https://github.com/sa-kannguyen/test-harness-workflow/issues/13
 
-## 1) Database Design (Prisma draft)
+## 1) Architecture Scope
+
+```mermaid
+flowchart TD
+UI[AdminRecruitmentListPage] --> API1[GET /api/admin/recruitments]
+UI --> API2[POST /api/admin/recruitments/bulk]
+UI --> API3[GET /api/admin/recruitments/bulk/{jobId}]
+UI --> API4[POST /api/admin/recruitments/csv]
+API1 --> SVC[RecruitmentService]
+API2 --> SVC
+API3 --> JOB[BulkJobService]
+SVC --> DB[(Recruitment DB)]
+JOB --> DB
+API2 --> EXT[DOMONET API Adapter]
+```
+
+## 2) Data Design (Prisma Draft)
 ```prisma
 model Recruitment {
   id              String   @id @default(cuid())
@@ -16,7 +32,7 @@ model Recruitment {
 model RecruitmentBulkJob {
   id              String   @id @default(cuid())
   companyId       String
-  operationType   String   // public_all/nonpublic_all/.../delete_all
+  operationType   String
   totalCount      Int
   successCount    Int      @default(0)
   skippedCount    Int      @default(0)
@@ -27,40 +43,58 @@ model RecruitmentBulkJob {
 }
 ```
 
-## 2) Backend API Design
-- `GET /api/admin/recruitments` : search/paging/sort/list variant (`kind`)
-- `POST /api/admin/recruitments/bulk` : start bulk operation (or sync processing for MVP)
-- `GET /api/admin/recruitments/bulk/{jobId}` : operation result summary
-- `POST /api/admin/recruitments/csv` : export CSV from current condition
+## 3) API Contracts
 
-### Controller/Service
-- Controller: validate params, auth context, dispatch service
-- Service: search composition, bulk op eligibility checks, row-level result mapping
-- Legacy parity points: status rules, token checks, lock checks, errorcode mapping
+### 3.1 GET /api/admin/recruitments
+- Query: `page,size,sortBy,sortOrder,kind,keyword,status[]`
+- 200 Response:
+```json
+{
+  "result": true,
+  "allCount": 120,
+  "page": 1,
+  "size": 20,
+  "rows": [{"id":"r1","title":"...","status":1,"updatedAt":"..."}]
+}
+```
 
-### Authentication/Authorization
-- Require logged-in admin session
-- Require recruitment permission (`person` feature id=1 equivalent)
-- Return 401/403/redirect behavior aligned by endpoint type (page vs ajax)
+### 3.2 POST /api/admin/recruitments/bulk
+- Request:
+```json
+{"operationType":"public_all","targetIds":["r1","r2"],"csrfToken":"..."}
+```
+- Response:
+```json
+{"result":true,"jobId":"bj_001","accepted":2}
+```
 
-## 3) Frontend API Design
-- Page: `AdminRecruitmentListPage`
+### 3.3 GET /api/admin/recruitments/bulk/{jobId}
+- Response includes `successCount/skippedCount/failedCount` and per-row errors.
+
+### 3.4 POST /api/admin/recruitments/csv
+- Uses same search payload; returns download token/stream.
+
+## 4) Auth & Permission
+- Require admin session
+- Require recruitment permission
+- Page path: redirect policy
+- API path: 401/403 JSON policy
+
+## 5) Frontend Spec
 - Components:
   - `RecruitmentSearchForm`
   - `RecruitmentTable`
   - `BulkOperationPanel`
-  - `BulkResultDialog/ResultPage`
-- Client behavior:
-  - Preserve search state
-  - Async list update for paging/sort
-  - Guarded dialogs for destructive actions
+  - `BulkResultSummary`
+- Behavior:
+  - Keep search state after paging
+  - Disable invalid actions by list variant
 
-## 4) Middleware Integration
-- Auth middleware
-- Role permission middleware
-- Request validation middleware
-- CSRF/session protection for bulk operations
+## 6) NFR
+- P95 search response < 800ms (20 rows)
+- Bulk start response < 500ms
+- Error observability with correlation id
 
-## 5) Trace
-- Story artifact: `US0402.md`
-- Story ticket: https://github.com/sa-kannguyen/test-harness-workflow/issues/13
+## 7) Traceability
+- TDD: https://github.com/sa-kannguyen/test-harness-workflow/issues/15
+- Plan: https://github.com/sa-kannguyen/test-harness-workflow/issues/20
