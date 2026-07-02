@@ -1,38 +1,50 @@
-# PRD-US0502
+# PRD-US0502 (VI) - Account Search/List Replace
 
 Related Story: https://github.com/sa-kannguyen/test-harness-workflow/issues/33
 
-## Architecture Flow
+## 1) Kiến trúc xử lý
 ```mermaid
 flowchart TD
-  A[Account List Page] --> B[Search Query Build]
-  B --> C[Account Search API]
-  C --> D[(Company/LoginUser DB)]
-  A --> E[Ajax Paging/Sorting]
-  A --> F[CSV Export Trigger]
-  F --> G[CSV Service normal/report/order]
+  A[UI: AccountSearchForm] --> B[POST search]
+  B --> C[Search Service]
+  C --> D[(company/login_user)]
+  A --> E[Ajax paging/sort]
+  E --> C
+  A --> F[CSV button]
+  F --> G[CSV service normal/report/order]
 ```
 
-## Backend Design
-- Endpoint 1: `GET /at-manage/accounts` (initial render or API mode)
-- Endpoint 2: `POST /at-manage/accounts/search` (`output_type=json`) for ajax list updates
-- Endpoint 3: `POST /at-manage/accounts/export` (`csv_type: normal|_report|_order`)
-- Endpoint 4: `GET /at-manage/getbusho` for department-member linkage
+## 2) Backend contracts (để DEV code thẳng)
 
-## Auth/Permission
-- Require `atid > 0`
-- Require account-search permission (function id 2)
-- Unauthorized redirect/403 behavior by endpoint type
+### 2.1 POST `/at-manage/account.php` (search full page)
+**Input chính:** `kensaku=1`, filter fields (`date_from`, `date_to`, `status`, `plan`, `kind[]`, `accountName`, ...)
+**Output:** HTML full page + list rows.
 
-## Frontend Design
-- Components:
-  - `AccountSearchForm`
-  - `AccountTable`
-  - `PagerControl`
-  - `CsvActionPanel`
-- Preserve `searchkey` behavior for ajax paging/sort
+### 2.2 POST `/at-manage/account.php` (ajax)
+**Input:** `output_type=json`, `p,c,s,d,searchkey`
+**Output JSON:**
+```json
+{
+  "result": true,
+  "html": "<tr>...</tr>",
+  "allcount": 123,
+  "pngerrmsg": ""
+}
+```
 
-## Data/Rule Notes
-- Keep status='指定なし(3)' logic as no-status-filter
-- Keep sub-account inclusion toggle (`sub=1`)
-- Keep manager-only page size option (all records)
+### 2.3 POST `/at-manage/account.php` (csv)
+**Input:** `output_type=csv`, `csv_type` (`""|"_report"|"_order"`), filter hidden, sort params.
+**Output:** file download Shift_JIS + cookie `downloaded`.
+
+### 2.4 GET `/at-manage/getbusho.php`
+**Input:** `busho`, `token`
+**Output:** member list JSON (403 nếu token sai/chưa login).
+
+## 3) Mapping rule quan trọng
+- `status=3` (指定なし) => không add điều kiện status vào SQL.
+- `sub` unchecked => chỉ `is_superuser=1`.
+- Form chỉnh tay nhưng chưa bấm search: ajax vẫn dùng `searchkey` cũ.
+
+## 4) NFR
+- Ajax list update < 1s với page size 20 trong dữ liệu thường.
+- CSV không double-submit (button disable + restore theo cookie).

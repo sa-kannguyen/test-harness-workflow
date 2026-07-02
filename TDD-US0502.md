@@ -1,26 +1,21 @@
-# TDD-US0502
+# TDD-US0502 (VI)
 
 Related PRD: https://github.com/sa-kannguyen/test-harness-workflow/issues/34
 
-## Test Pyramid
-```mermaid
-flowchart BT
-  E2E[E2E: list + csv + ajax behavior]
-  INT[Integration: search filter + permission + export]
-  UNIT[Unit: query parser + mapper + validator]
-  E2E --> INT --> UNIT
-```
+## Test matrix (dev/test nhìn phát làm được)
+| ID | Loại | Case | Kết quả mong đợi |
+|---|---|---|---|
+| AUTH-01 | Integration | chưa login vào account.php | 302 -> index |
+| AUTH-02 | Integration | có login nhưng thiếu quyền function 2 | 302 -> menu |
+| SRCH-01 | Integration | filter date/status/plan/accountName | row đúng điều kiện |
+| SRCH-02 | Integration | status=3 | query không filter status |
+| AJAX-01 | Integration | output_type=json + sort/paging | trả `result/html/allcount` đúng |
+| AJAX-02 | UI | ajax fail | hiển thị `検索結果エラー` |
+| CSV-01 | Integration | csv normal | file tải về đúng cột |
+| CSV-02 | Integration | csv report | file report đúng |
+| CSV-03 | Integration | csv order (env bật) | file order đúng |
+| BUSHO-01 | Integration | token sai getbusho | 403 |
 
-## Mandatory Cases
-- AUTH-01: unauthenticated -> redirect/login behavior
-- AUTH-02: no permission -> menu redirect/forbidden behavior
-- SRCH-01: multi-condition filter returns expected rows
-- SRCH-02: paging + sort with `searchkey` consistency
-- CSV-01: normal CSV export success
-- CSV-02: report CSV export success
-- CSV-03: order CSV export gated by environment flag
-- AJAX-01: ajax failure shows "検索結果エラー"
-
-## Exit Criteria
-- P1 cases automated or scriptable and pass
-- CSV download behavior verified with cookie/download restore flow
+## Exit criteria
+- Tất cả case P1 pass (AUTH/SRCH/AJAX/CSV).
+- PR có evidence: ảnh/gif ajax + file csv mẫu.
