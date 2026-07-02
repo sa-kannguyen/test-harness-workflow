@@ -98,3 +98,9 @@ model RecruitmentBulkJob {
 ## 7) Traceability
 - TDD: https://github.com/sa-kannguyen/test-harness-workflow/issues/15
 - Plan: https://github.com/sa-kannguyen/test-harness-workflow/issues/20
+
+## 8) Release and Runtime Readiness
+- PR review is mandatory with at least one reviewer.
+- CI gate required: lint + unit/integration + selected E2E smoke.
+- Staging sign-off required before production rollout.
+- Post-release monitoring: error rate, failed bulk ops, API latency.

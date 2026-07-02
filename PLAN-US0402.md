@@ -28,3 +28,27 @@ gantt
 - Legacy parity ambiguity around status transition exceptions
 - External DOMONET coupling and retry behavior
 - Permission rule drift in migration
+
+## 4) Governance Flow
+```mermaid
+flowchart TD
+R[Requirement Input] --> S[Story + AC]
+S --> GA{Gate A
+PM+BRSE}
+GA -->|Pass| P[PRD Design]
+GA -->|Fail| S
+P --> GB{Gate B
+BRSE+DEV}
+GB -->|Pass| T[TDD + Task Breakdown]
+GB -->|Fail| P
+T --> GC{Gate C
+DEV+TEST}
+GC -->|Pass| I[Implementation + PR]
+GC -->|Fail| T
+I --> C[CI + Review]
+C --> E[E2E + UAT]
+E --> D{Defect?}
+D -->|Code| I
+D -->|Spec| P
+D -->|No| REL[Release + Monitoring]
+```

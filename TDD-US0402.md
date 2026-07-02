@@ -32,3 +32,9 @@ E2E --> INT --> UNIT
 - All P1 test cases pass
 - No critical regression on legacy parity checkpoints
 - CI green for API + E2E smoke suite
+
+## 5) Defect Triage Loop
+When test fails, classify defect root first:
+1. **Code defect** → fix in implementation task, keep spec unchanged.
+2. **Spec/design defect** → update PRD/TDD/Task and then implement.
+3. **Test defect** → fix flaky/incorrect test script and rerun.
